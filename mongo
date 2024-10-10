@@ -1,0 +1,81 @@
+MONGODB upgrade without downtime container v6 to v7
+
+
+sudo chown -R rishisingh:staff /Users/rishisingh/prod/db/mount/6
+sudo chmod -R 755 /Users/rishisingh/prod/db/mount/6
+id -u rishisingh
+
+
+
+
+docker run -d --name mongo6 \
+  -p 27017:27017 \
+  -v /Users/rishisingh/prod/db/mount/6:/data/db \
+  -e MONGO_INITDB_ROOT_USERNAME=rishi \
+  -e MONGO_INITDB_ROOT_PASSWORD=nick \
+  --restart always \
+  --user 501:501 \
+  mongo:6
+
+
+
+
+Up container now
+
+Compass gui mongodb://rishi:nick@localhost:27017
+
+
+Database name sample-test
+Collection name sample
+
+
+I insert some data by creating sample-test db name 2 files I entered
+
+
+Inside docker mongo6 by root
+docker exec -it --user root mongo6 bash
+
+ enter mongosh
+Or pore steps follow
+Then run mongosh
+Getting shell exit
+mongosh -u rishi -p nick --authenticationDatabase admin
+show dbs
+test> show dbs
+admin        100.00 KiB
+config        84.00 KiB
+local         72.00 KiB
+sample-test   72.00 KiB
+
+
+use sample-test
+show collections
+db.sample.find().pretty()
+
+mkdir -p ~/mongo-backup (on machine)
+
+docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mongo6
+
+172.17.0.4
+
+docker run --rm --network bridge -v ~/mongo-backup:/backup --name mongo6-backup mongo:6 mongodump --host 172.17.0.4 --out /backup --username rishi --password nick --authenticationDatabase admin
+
+
+Pull image mongo7
+
+docker run -d --name mongo7 -p 27018:27017 -v ~/mongo-backup:/backup -e MONGO_INITDB_ROOT_USERNAME=rishi -e MONGO_INITDB_ROOT_PASSWORD=nick mongo:7
+
+docker exec -it mongo7 mongorestore --username rishi --password nick --authenticationDatabase admin /backup
+
+docker exec -it --user root mongo7 bash
+
+For verify restoration
+docker exec -it --user root mongo7 bash
+ mongosh -u rishi -p nick --authenticationDatabase admin check data
+
+show dbs
+test> show dbs
+admin        100.00 KiB
+config        84.00 KiB
+local         72.00 KiB
+sample-test   72.00 KiB
