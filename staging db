@@ -1,0 +1,77 @@
+Staging-db
+——————
+Login mongodb
+By this ssl 
+mongosh "mongodb://localhost:27017/?authMechanism=MONGODB-X509&ssl=true" \
+  --tls \
+  --tlsCAFile /usr/ssl/ca.pem \
+  --tlsCertificateKeyFile /usr/ssl/client.pem \
+  --authenticationDatabase '$external'
+
+
+Docker pull mongo:7
+
+docker run \
+  --restart=always \
+  -v /home/ubuntu/mount/mongo/7/backup:/data/db \
+  -v ~/mount/mongo/ssl/:/usr/ssl/ \
+  -v ~/mount/mongo/7/mongod7.conf:/etc/mongod.conf \
+  -v ~/mount/mongo/7/mongod7.log:/var/log/mongodb/mongod.log \
+  --name=mongo7 \
+  -p 0.0.0.0:5648:27017 \
+  -m=20g \
+  --cpus=2 \
+  -d \
+  mongo:7 --config /etc/mongod.conf
+
+
+To dump  docker exec -it mongo mongodump \
+  --out /data/backup \
+  --host=localhost \
+  --port=27017 \
+  --ssl \
+  --sslCAFile /usr/ssl/ca.pem \
+  --sslPEMKeyFile /usr/ssl/client.pem \
+  --authenticationDatabase '$external' \
+  --authenticationMechanism=MONGODB-X509
+
+
+
+
+With compression  docker exec -it mongo mongodump \
+  --out /data/backup \
+  --host=localhost \
+  --port=27017 \
+  --ssl \
+  --sslCAFile /usr/ssl/ca.pem \
+  --sslPEMKeyFile /usr/ssl/client.pem \
+  --authenticationDatabase '$external' \
+  --authenticationMechanism=MONGODB-X509 \
+  --gzip \
+  --numParallelCollections=4
+
+
+sudo chmod -R 777 /home/ubuntu/mount/mongo/7/backup/
+
+
+docker cp mongo:/data/backup /home/ubuntu/mount/mongo/7/backup/
+
+docker exec -it mongo7 mongorestore \
+  --drop \
+  --gzip \
+  /data/db/backup \
+  --host=localhost \
+  --port=27017
+
+
+
+docker exec -it mongo7 mongosh --host=localhost --port=27017
+
+show dbs
+use <db_name>
+show collections
+
+
+
+
+
